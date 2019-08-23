@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+    stages {
+        stage ('Clone') {
+            steps {
+                git branch: 'master', url: "https://github.com/"
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+				   sh "/opt/maven/bin/mvn clean install"
+                }
+
+            }
+			}
+        stage ('Artifactory configuration') {
+            steps {
+						rtServer (
+							id: "JfrogArtifact",
+							url: "http://:8080/artifactory",
+							credentialsId: "JfrogID"
+						)
+
+						rtUpload (
+							serverId: "JfrogArtifact",
+							spec:
+								"""{
+								  "files": [
+									{
+									  "pattern": "${WORKSPACE}/target/.war",
+									  "target": "qadevops-release-local"
+									}
+								 ]
+								}"""
+						)
+
+
+            }
+        }
+		
+		# stage ('Publish build info') {
+            # steps {
+                # rtPublishBuildInfo (
+                    # serverId: "JfrogArtifact"
+                # )
+            # }
+        # }
+
+    }
+}
